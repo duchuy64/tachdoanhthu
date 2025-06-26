@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phân tích đơn hàng HUY - MÂY - TÙNG</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --primary-color: #4CAF50;
+            --secondary-color: #f5f5f5;
+            --border-color: #dddddd;
+            --link-color: #0066cc;
+            --important-column: #fff8e1;
+            --copy-btn: #e3f2fd;
+            --error-color: #d32f2f;
+            --huy-bg: #e8f5e9;
+            --may-bg: #e3f2fd;
+            --tung-bg: #f3e5f5;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #1e1e1e;
+                --text-color: #f0f0f0;
+                --primary-color: #2e7d32;
+                --secondary-color: #2d2d2d;
+                --border-color: #444444;
+                --link-color: #4dabf7;
+                --important-column: #423a2a;
+                --copy-btn: #0d47a1;
+                --error-color: #f44336;
+                --huy-bg: #1b5e20;
+                --may-bg: #0d47a1;
+                --tung-bg: #4a148c;
+            }
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        h1, h2, h3, h4 {
+            color: var(--text-color);
+        }
+        
+        .upload-section {
+            background-color: var(--secondary-color);
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .result-section {
+            margin-top: 30px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+            position: relative;
+        }
+        
+        th {
+            background-color: var(--secondary-color);
+            font-weight: bold;
+        }
+        
+        .important-column {
+            background-color: var(--important-column);
+            font-weight: bold;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-weight: bold;
+            transition: opacity 0.3s;
+        }
+        
+        button:hover {
+            opacity: 0.9;
+        }
+        
+        .instructions {
+            background-color: var(--secondary-color);
+            border-left: 6px solid var(--primary-color);
+            padding: 15px;
+            margin: 30px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .file-upload-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .file-upload-row label {
+            min-width: 220px;
+            font-weight: bold;
+        }
+        
+        .download-link {
+            color: var(--link-color);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .download-link:hover {
+            text-decoration: underline;
+        }
+        
+        .download-link::before {
+            content: "↓";
+        }
+        
+        .download-note {
+            font-size: 0.9em;
+            color: var(--error-color);
+            margin-left: 10px;
+        }
+        
+        input[type="file"] {
+            padding: 8px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-color);
+        }
+        
+        .summary {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: var(--secondary-color);
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .summary h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+        
+        .summary p {
+            margin: 8px 0;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            background-color: var(--copy-btn);
+            color: var(--text-color);
+            border: none;
+            border-radius: 3px;
+            padding: 2px 5px;
+            font-size: 0.8em;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        td:hover .copy-btn {
+            opacity: 1;
+        }
+        
+        .copy-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            display: none;
+            z-index: 1000;
+        }
+        
+        .formula {
+            font-family: monospace;
+            background-color: var(--secondary-color);
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        
+        .source-table {
+            margin-top: 30px;
+            width: 100%;
+        }
+        
+        .source-table th {
+            text-align: center;
+        }
+        
+        .huy-sources {
+            background-color: var(--huy-bg);
+        }
+        
+        .may-sources {
+            background-color: var(--may-bg);
+        }
+        
+        .tung-sources {
+            background-color: var(--tung-bg);
+        }
+        
+        .common-sources {
+            background-color: var(--secondary-color);
+        }
+        
+        .source-name {
+            padding: 8px 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Phân tích đơn hàng theo HUY - MÂY - TÙNG</h1>
+        
+        <div class="upload-section">
+            <h2>Tải lên file Excel</h2>
+            <div class="file-upload-row">
+                <label for="channelFile">BC đơn hàng theo kênh bán:</label>
+                <input type="file" id="channelFile" accept=".xlsx, .xls">
+                <a href="https://nhanh.vn/report/order/salechannel?storeId=121646&orderDate=create&fromDate=01%2F05%2F2025&toDate=31%2F05%2F2025&statuses%5B%5D=54&statuses%5B%5D=57&statuses%5B%5D=55&statuses%5B%5D=56&statuses%5B%5D=68&statuses%5B%5D=73&statuses%5B%5D=42&statuses%5B%5D=40&statuses%5B%5D=43&statuses%5B%5D=59&statuses%5B%5D=60&statuses%5B%5D=61&statuses%5B%5D=71&statuses%5B%5D=74&statuses%5B%5D=72&trafficSourceId%5B%5D=2701&trafficSourceId%5B%5D=2702&trafficSourceId%5B%5D=2703&trafficSourceId%5B%5D=2704&trafficSourceId%5B%5D=3435&trafficSourceId%5B%5D=3438&trafficSourceId%5B%5D=3439&trafficSourceId%5B%5D=3440&trafficSourceId%5B%5D=3441&trafficSourceId%5B%5D=3442&trafficSourceId%5B%5D=3444&trafficSourceId%5B%5D=3446&trafficSourceId%5B%5D=3447&trafficSourceId%5B%5D=3448&trafficSourceId%5B%5D=3455&trafficSourceId%5B%5D=3456&trafficSourceId%5B%5D=3457" 
+                   target="_blank" class="download-link">Tải BC kênh bán</a>
+                <span class="download-note">(chọn lại khoảng ngày trước khi tải)</span>
+            </div>
+            <div class="file-upload-row">
+                <label for="statusFile">BC đơn hàng theo trạng thái:</label>
+                <input type="file" id="statusFile" accept=".xlsx, .xls">
+                <a href="https://nhanh.vn/report/order/status?storeId=121646&display=2&fromDate=01%2F05%2F2025&toDate=31%2F05%2F2025&optionDate=createdDate&showOption=1" 
+                   target="_blank" class="download-link">Tải BC trạng thái</a>
+                <span class="download-note">(chọn lại khoảng ngày trước khi tải)</span>
+            </div>
+            <button id="analyzeBtn">Phân tích dữ liệu</button>
+        </div>
+        
+        <div class="result-section">
+            <h2>Kết quả phân tích</h2>
+            <div id="resultContainer"></div>
+        </div>
+
+        <div class="instructions">
+            <h2>Hướng dẫn sử dụng:</h2>
+            <ol>
+                <li><strong>Tải file từ các link bên trên:</strong> Nhớ chọn lại khoảng ngày cần phân tích trước khi tải</li>
+                <li><strong>Tải lên file:</strong> Chọn file "BC đơn hàng theo kênh bán" và "BC đơn hàng theo trạng thái" đã tải về</li>
+                <li><strong>Phân tích:</strong> Nhấn nút "Phân tích dữ liệu" để xem kết quả</li>
+                <li><strong>Đọc kết quả:</strong> 
+                    <ul>
+                        <li>Cột "Doanh thu thành công (đã trừ nhập trả lại)" được làm nổi bật</li>
+                        <li>Nhấn nút copy bên cạnh các giá trị doanh thu để sao chép nhanh</li>
+                        <li>Công thức tính nhập trả lại: <span class="formula">Nhập trả lại = Doanh thu chưa trừ - Doanh thu đã trừ</span></li>
+                    </ul>
+                </li>
+            </ol>
+            <p><strong>Lưu ý:</strong> Các nguồn chung sẽ được chia đều cho 3 người (HUY, MÂY, TÙNG)</p>
+        </div>
+
+        <table class="source-table">
+            <thead>
+                <tr>
+                    <th colspan="2">Danh sách nguồn theo từng người</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="huy-sources">
+                    <td width="20%"><strong>Nguồn HUY</strong></td>
+                    <td class="source-name">
+                        <div>OL - SevenAM Thời Trang Công Sở</div>
+                        <div>OL - SevenAM Chính Hãng Giá Tốt</div>
+                        <div>OL- CSKH Seven Am Thời trang công sở</div>
+                        <div>OL- CSKH Seven Am Chính Hãng Giá Tốt</div>
+                        <div>OL- Zalo557</div>
+                    </td>
+                </tr>
+                <tr class="may-sources">
+                    <td><strong>Nguồn MÂY</strong></td>
+                    <td class="source-name">
+                        <div>OL - SevenAM Online</div>
+                        <div>OL - Seven.AM - Thời trang thiết kế cao cấp</div>
+                        <div>OL - SevenAM Outlet</div>
+                        <div>OL - CSKH Seven Am Online</div>
+                        <div>OL - CSKH Seven.AM VN</div>
+                        <div>OL- Zalo989</div>
+                        <div>OL - CSKH Seven Am Outlet</div>
+                    </td>
+                </tr>
+                <tr class="tung-sources">
+                    <td><strong>Nguồn TÙNG</strong></td>
+                    <td class="source-name">
+                        <div>OL- SevenAM</div>
+                        <div>OL - CSKH Seven Am</div>
+                        <div>OL- CSKH Seven.AM - Thời Trang Thiết Kế</div>
+                        <div>OL- Seven.AM - Thời Trang Thiết Kế</div>
+                    </td>
+                </tr>
+                <tr class="common-sources">
+                    <td><strong>Nguồn chung</strong></td>
+                    <td class="source-name">
+                        <div>OL- ZALO (chia đều cho 3 người)</div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="copy-notification" id="copyNotification">Đã sao chép!</div>
+    </div>
+
+    <script>
+        // Define the sources for each person
+        const sources = {
+            HUY: [
+                "OL - SevenAM Thời Trang Công Sở",
+                "OL - SevenAM Chính Hãng Giá Tốt",
+                "OL- CSKH Seven Am Thời trang công sở",
+                "OL- CSKH Seven Am Chính Hãng Giá Tốt",
+                "OL- Zalo557"
+            ],
+            MÂY: [
+                "OL - SevenAM Online",
+                "OL - Seven.AM - Thời trang thiết kế cao cấp",
+                "OL - SevenAM Outlet",
+                "OL - CSKH Seven Am Online",
+                "OL - CSKH Seven.AM VN",
+                "OL- Zalo989",
+                "OL - CSKH Seven Am Outlet"
+            ],
+            TÙNG: [
+                "OL- SevenAM",
+                "OL - CSKH Seven Am",
+                "OL- CSKH Seven.AM - Thời Trang Thiết Kế",
+                "OL- Seven.AM - Thời Trang Thiết Kế"
+            ],
+            CHUNG: ["OL- ZALO"]
+        };
+
+        // Variables to store the data
+        let channelData = [];
+        let statusData = [];
+        
+        // File upload handlers
+        document.getElementById('channelFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            readExcelFile(file, 'channel');
+        });
+        
+        document.getElementById('statusFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            readExcelFile(file, 'status');
+        });
+        
+        // Analyze button handler
+        document.getElementById('analyzeBtn').addEventListener('click', analyzeData);
+        
+        // Function to read Excel file
+        function readExcelFile(file, type) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                // Assuming the first sheet is the one we want
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                
+                if (type === 'channel') {
+                    channelData = jsonData;
+                } else if (type === 'status') {
+                    statusData = jsonData;
+                }
+                
+                console.log(`${type} data loaded`, jsonData);
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+        
+        // Main analysis function
+        function analyzeData() {
+            if (channelData.length === 0 || statusData.length === 0) {
+                alert('Vui lòng tải lên cả hai file trước khi phân tích');
+                return;
+            }
+            
+            // Initialize result objects
+            const result = {
+                HUY: { 
+                    doanhSoDiDon: 0,
+                    doanhThuThanhCongChuaTru: 0,
+                    doanhThuThanhCongDaTru: 0
+                },
+                MÂY: { 
+                    doanhSoDiDon: 0,
+                    doanhThuThanhCongChuaTru: 0,
+                    doanhThuThanhCongDaTru: 0
+                },
+                TÙNG: { 
+                    doanhSoDiDon: 0,
+                    doanhThuThanhCongChuaTru: 0,
+                    doanhThuThanhCongDaTru: 0
+                },
+                CHUNG: { 
+                    doanhSoDiDon: 0,
+                    doanhThuThanhCongChuaTru: 0,
+                    doanhThuThanhCongDaTru: 0
+                }
+            };
+            
+            // Process status data (BC đơn hàng theo trạng thái)
+            statusData.forEach(row => {
+                const nguon = row['Nguồn'] || row['Nguồn đơn'] || '';
+                let owner = '';
+                
+                // Determine which person this source belongs to
+                if (sources.HUY.some(source => nguon.includes(source))) {
+                    owner = 'HUY';
+                } else if (sources.MÂY.some(source => nguon.includes(source))) {
+                    owner = 'MÂY';
+                } else if (sources.TÙNG.some(source => nguon.includes(source))) {
+                    owner = 'TÙNG';
+                } else if (sources.CHUNG.some(source => nguon.includes(source))) {
+                    owner = 'CHUNG';
+                } else {
+                    return; // Skip if not in any category
+                }
+                
+                // Calculate Doanh số đi đơn
+                const dangChuyen = parseFloat(row['Đang chuyển (Thành tiền)']) || 0;
+                const thatBai = parseFloat(row['Thất bại (Thành tiền)']) || 0;
+                const thanhCong = parseFloat(row['Thành công (Thành tiền)']) || 0;
+                const chuyenHoan = parseFloat(row['Chuyển hoàn (Thành tiền)']) || 0;
+                
+                result[owner].doanhSoDiDon += dangChuyen + thatBai + thanhCong + chuyenHoan;
+                
+                // Calculate Doanh thu thành công (chưa trừ nhập trả lại)
+                result[owner].doanhThuThanhCongChuaTru += thanhCong;
+            });
+            
+            // Process channel data (BC đơn hàng theo kênh bán)
+            channelData.forEach(row => {
+                const nguon = row['Nguồn'] || row['Nguồn đơn'] || '';
+                let owner = '';
+                
+                // Determine which person this source belongs to
+                if (sources.HUY.some(source => nguon.includes(source))) {
+                    owner = 'HUY';
+                } else if (sources.MÂY.some(source => nguon.includes(source))) {
+                    owner = 'MÂY';
+                } else if (sources.TÙNG.some(source => nguon.includes(source))) {
+                    owner = 'TÙNG';
+                } else if (sources.CHUNG.some(source => nguon.includes(source))) {
+                    owner = 'CHUNG';
+                } else {
+                    return; // Skip if not in any category
+                }
+                
+                // Calculate Doanh thu thành công (đã trừ nhập trả lại)
+                const doanhThu = parseFloat(row['Doanh thu (Đơn thành công)']) || 0;
+                result[owner].doanhThuThanhCongDaTru += doanhThu;
+            });
+            
+            // Distribute the common source data equally among the three people
+            ['doanhSoDiDon', 'doanhThuThanhCongChuaTru', 'doanhThuThanhCongDaTru'].forEach(key => {
+                const commonValue = result.CHUNG[key] / 3;
+                result.HUY[key] += commonValue;
+                result.MÂY[key] += commonValue;
+                result.TÙNG[key] += commonValue;
+            });
+            
+            // Display the results
+            displayResults(result);
+        }
+        
+        // Function to display the results in a table
+        function displayResults(result) {
+            const container = document.getElementById('resultContainer');
+            container.innerHTML = '';
+            
+            // Create table
+            const table = document.createElement('table');
+            
+            // Create header
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            
+            const headers = ['', 'Doanh số đi đơn', 'Doanh thu thành công (chưa trừ nhập trả lại)', 
+                            'Doanh thu thành công (đã trừ nhập trả lại)', 'Nhập trả lại (Chưa trừ - Đã trừ)'];
+            
+            headers.forEach((headerText, index) => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                // Highlight the important column header
+                if (index === 3) {
+                    th.style.backgroundColor = 'var(--important-column)';
+                }
+                headerRow.appendChild(th);
+            });
+            
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            // Create body
+            const tbody = document.createElement('tbody');
+            
+            // Add rows for each person
+            ['HUY', 'MÂY', 'TÙNG'].forEach(person => {
+                const row = document.createElement('tr');
+                
+                // Person name
+                const nameCell = document.createElement('td');
+                nameCell.textContent = person;
+                row.appendChild(nameCell);
+                
+                // Doanh số đi đơn
+                const doanhSoCell = document.createElement('td');
+                doanhSoCell.textContent = formatCurrency(result[person].doanhSoDiDon);
+                row.appendChild(doanhSoCell);
+                
+                // Doanh thu thành công chưa trừ (with copy button)
+                const doanhThuChuaTruCell = document.createElement('td');
+                const chuaTruValue = result[person].doanhThuThanhCongChuaTru;
+                doanhThuChuaTruCell.textContent = formatCurrency(chuaTruValue);
+                addCopyButton(doanhThuChuaTruCell, chuaTruValue);
+                row.appendChild(doanhThuChuaTruCell);
+                
+                // Doanh thu thành công đã trừ (important column with copy button)
+                const doanhThuDaTruCell = document.createElement('td');
+                const daTruValue = result[person].doanhThuThanhCongDaTru;
+                doanhThuDaTruCell.textContent = formatCurrency(daTruValue);
+                doanhThuDaTruCell.className = 'important-column';
+                addCopyButton(doanhThuDaTruCell, daTruValue);
+                row.appendChild(doanhThuDaTruCell);
+                
+                // Nhập trả lại (calculated and with copy button)
+                const nhapTraLaiCell = document.createElement('td');
+                const nhapTraLaiValue = result[person].doanhThuThanhCongChuaTru - result[person].doanhThuThanhCongDaTru;
+                nhapTraLaiCell.textContent = formatCurrency(nhapTraLaiValue);
+                addCopyButton(nhapTraLaiCell, nhapTraLaiValue);
+                row.appendChild(nhapTraLaiCell);
+                
+                tbody.appendChild(row);
+            });
+            
+            table.appendChild(tbody);
+            container.appendChild(table);
+            
+            // Add summary
+            const summary = document.createElement('div');
+            summary.className = 'summary';
+            const totalChuaTru = result.HUY.doanhThuThanhCongChuaTru + result.MÂY.doanhThuThanhCongChuaTru + result.TÙNG.doanhThuThanhCongChuaTru;
+            const totalDaTru = result.HUY.doanhThuThanhCongDaTru + result.MÂY.doanhThuThanhCongDaTru + result.TÙNG.doanhThuThanhCongDaTru;
+            const totalNhapTraLai = totalChuaTru - totalDaTru;
+            
+            summary.innerHTML = `
+                <h3>Tổng hợp:</h3>
+                <p><strong>Tổng doanh số đi đơn:</strong> ${formatCurrency(result.HUY.doanhSoDiDon + result.MÂY.doanhSoDiDon + result.TÙNG.doanhSoDiDon)}</p>
+                <p><strong>Tổng doanh thu thành công (chưa trừ):</strong> ${formatCurrency(totalChuaTru)}</p>
+                <p><strong>Tổng doanh thu thành công (đã trừ):</strong> <span style="font-weight:bold">${formatCurrency(totalDaTru)}</span></p>
+                <p><strong>Tổng nhập trả lại:</strong> ${formatCurrency(totalNhapTraLai)}</p>
+                <p><strong>Công thức:</strong> <span class="formula">${formatCurrency(totalChuaTru)} - ${formatCurrency(totalDaTru)} = ${formatCurrency(totalNhapTraLai)}</span></p>
+            `;
+            container.appendChild(summary);
+        }
+
+        // Helper function to add copy button to a cell
+        function addCopyButton(cell, value) {
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.textContent = 'Copy';
+            btn.title = 'Sao chép giá trị số';
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                copyToClipboard(value.toString().replace(/[.,]/g, ''));
+                showCopyNotification();
+            });
+            cell.appendChild(btn);
+            cell.style.position = 'relative';
+        }
+        
+        // Helper function to copy text to clipboard
+        function copyToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+        
+        // Helper function to show copy notification
+        function showCopyNotification() {
+            const notification = document.getElementById('copyNotification');
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 2000);
+        }
+        
+        // Helper function to format currency
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+        }
+    </script>
+</body>
+</html>
